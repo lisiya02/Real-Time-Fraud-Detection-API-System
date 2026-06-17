@@ -5,3 +5,5 @@ __pycache__/
 .vscode/
 *.log
 data/raw/
+*.db
+.pytest_cache/
