@@ -1,4 +1,7 @@
 import joblib
+import json
+from sqlalchemy.orm import Session
+from app.db.models import TransactionRecord
 import numpy as np
 import pandas as pd
 import logging
@@ -64,8 +67,10 @@ class FraudDetectionService:
             return "Zero-amount transaction detected — possible card-testing fraud."
        return None
 
-    def predict(self, transaction: TransactionInput) -> FraudPredictionResponse:
-        """Run fraud prediction on a single transaction."""
+    def predict(
+        self, transaction: TransactionInput, db: Session
+    ) -> FraudPredictionResponse:
+        """Run fraud prediction on a single transaction and persist the result."""
         try:
             # Convert input to DataFrame preserving exact column order
             input_dict = transaction.model_dump()
@@ -99,8 +104,26 @@ class FraudDetectionService:
             if business_flag:
                 message = f"{message} Note: {business_flag}"
 
+            transaction_id = str(uuid.uuid4())
+
+            # Persist this prediction to the database for audit trail
+            # and future retraining purposes
+            record = TransactionRecord(
+                transaction_id=transaction_id,
+                amount=transaction.Amount,
+                transaction_hour=transaction.Transaction_Hour,
+                account_age_days=transaction.Account_Age_Days,
+                raw_input=json.dumps(input_dict),
+                fraud_probability=round(fraud_probability, 4),
+                is_fraud=is_fraud,
+                risk_level=risk_level,
+                message=message,
+            )
+            db.add(record)
+            db.commit()
+
             return FraudPredictionResponse(
-                transaction_id=str(uuid.uuid4()),
+                transaction_id=transaction_id,
                 is_fraud=is_fraud,
                 fraud_probability=round(fraud_probability, 4),
                 risk_level=risk_level,
@@ -108,5 +131,6 @@ class FraudDetectionService:
             )
 
         except Exception as e:
+            db.rollback()
             logger.error(f"Prediction failed: {e}")
             raise
