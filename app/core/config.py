@@ -6,17 +6,13 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     API_V1_PREFIX: str = "/api/v1"
-    API_KEY: str
 
-    # Database configuration (also used directly by docker-compose.yml)
     DATABASE_URL: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    
+    API_KEY: str
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()
