@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +22,16 @@ app.include_router(
     prefix=settings.API_V1_PREFIX,
     tags=["Fraud Detection"]
 )
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    """Root endpoint - provides basic API info and links to documentation."""
+    return {
+        "message": "Fraud Detection API is running. Visit /docs for interactive API documentation.",
+        "docs_url": "/docs",
+        "health_check": "/health"
+    }
 
 
 @app.get("/health", tags=["Health"])
